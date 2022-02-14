@@ -1,0 +1,178 @@
+version: '2.1'
+services:
+  auth_service:
+    container_name: auth_service
+    image: drmp13/public:jube-test--authentication-service-1.0.0
+    command:  'npm start'
+    volumes:
+      - ./AUTH_SERVICE:/usr/src/app
+      - /usr/src/app/node_modules/
+    restart: always
+    depends_on:
+      auth_db:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+    expose:
+      - "9000"
+    environment:
+      - NODE_ENV=development
+      - PORT=9000
+      - JWT_SECRET=${JWT_SECRET}
+      - API_THIRD_PARTY__ELEVANIA__API_KEY=${SERVICE___API_THIRD_PARTY__ELEVANIA__API_KEY}
+      - SERVICE_USER__DATABASE_PG__HOST=${SERVICE_USER__DATABASE_PG__HOST}
+      - SERVICE_USER__DATABASE_PG__USER=${SERVICE_USER__DATABASE_PG__USER}
+      - SERVICE_USER__DATABASE_PG__PASS=${SERVICE_USER__DATABASE_PG__PASS}
+      - SERVICE_USER__DATABASE_PG__PORT=${SERVICE_USER__DATABASE_PG__PORT}
+      - SERVICE_USER__DATABASE_PG__DB=${SERVICE_USER__DATABASE_PG__DB}
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_USER__API__LOCAL_HOST}
+  auth_db:
+    container_name: 'auth_db'
+    image: postgres:9.5
+    environment:
+      POSTGRES_USER: ${SERVICE_USER__DATABASE_PG__USER}
+      POSTGRES_PASSWORD: ${SERVICE_USER__DATABASE_PG__PASS}
+      POSTGRES_DB: ${SERVICE_USER__DATABASE_PG__DB}
+      PGDATA: /data/postgres
+    volumes:
+       - ./AUTH_DB/DATA:/data/postgres
+       - ./AUTH_DB/DUMP:/docker-entrypoint-initdb.d/
+    ports:
+      - "${SERVICE_USER__DATABASE_PG__PORT}:5432"
+    expose:
+      - "${SERVICE_USER__DATABASE_PG__PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_USER__DATABASE_PG__USER}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_USER__DATABASE_PG__HOST}
+  product_service:
+    container_name: product_service
+    image: drmp13/public:jube-test--product-service-1.0.0
+    command:  'npm start'
+    volumes:
+      - ./PRODUCT_SERVICE:/usr/src/app
+      - /usr/src/app/node_modules/
+    restart: always
+    depends_on:
+      product_db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - JWT_SECRET=${JWT_SECRET}
+      - API_THIRD_PARTY__ELEVANIA__BASEPOINT=${SERVICE___API_THIRD_PARTY__ELEVANIA__BASEPOINT}
+      - API_THIRD_PARTY__ELEVANIA__API_KEY=${SERVICE___API_THIRD_PARTY__ELEVANIA__API_KEY}
+      - SERVICE_PRODUCT__DATABASE_PG__HOST=${SERVICE_PRODUCT__DATABASE_PG__HOST}
+      - SERVICE_PRODUCT__DATABASE_PG__USER=${SERVICE_PRODUCT__DATABASE_PG__USER}
+      - SERVICE_PRODUCT__DATABASE_PG__PASS=${SERVICE_PRODUCT__DATABASE_PG__PASS}
+      - SERVICE_PRODUCT__DATABASE_PG__PORT=${SERVICE_PRODUCT__DATABASE_PG__PORT}
+      - SERVICE_PRODUCT__DATABASE_PG__DB=${SERVICE_PRODUCT__DATABASE_PG__DB}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__HOST=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__HOST}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PASS=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PASS}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__DB=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__DB}
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_PRODUCT__API__LOCAL_HOST}
+  product_db:
+    container_name: 'product_db'
+    image: postgres:9.5
+    environment:
+      POSTGRES_USER: ${SERVICE_PRODUCT__DATABASE_PG__USER}
+      POSTGRES_PASSWORD: ${SERVICE_PRODUCT__DATABASE_PG__PASS}
+      POSTGRES_DB: ${SERVICE_PRODUCT__DATABASE_PG__DB}
+      PGDATA: /data/postgres
+    volumes:
+       - ./PRODUCT_DB/DATA:/data/postgres
+       - ./PRODUCT_DB/DUMP:/docker-entrypoint-initdb.d/
+    ports:
+      - "${SERVICE_PRODUCT__DATABASE_PG__PORT}:5432"
+    expose:
+      - "${SERVICE_PRODUCT__DATABASE_PG__PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_PRODUCT__DATABASE_PG__USER}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_PRODUCT__DATABASE_PG__HOST}
+  trans_service:
+    container_name: trans_service
+    image: drmp13/public:jube-test--adjustment-transaction-service-1.0.0
+    build: ./ADJUSTMENTTRANSACTION_SERVICE
+    command:  'npm start'
+    volumes: 
+      - ./ADJUSTMENTTRANSACTION_SERVICE:/usr/src/app
+      - /usr/src/app/node_modules/
+    restart: always
+    depends_on:
+      product_db:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    expose:
+      - "8001"
+    environment:
+      - NODE_ENV=development
+      - PORT=8001
+      - JWT_SECRET=${JWT_SECRET}
+      - API_THIRD_PARTY__ELEVANIA__BASEPOINT=${SERVICE___API_THIRD_PARTY__ELEVANIA__BASEPOINT}
+      - API_THIRD_PARTY__ELEVANIA__API_KEY=${SERVICE___API_THIRD_PARTY__ELEVANIA__API_KEY}
+      - SERVICE_PRODUCT__API__LOCAL_HOST=${SERVICE_PRODUCT__API__LOCAL_HOST}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__HOST=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__HOST}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PASS=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PASS}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT}
+      - SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__DB=${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__DB}
+      - SERVICE_PRODUCT__DATABASE_PG__HOST=${SERVICE_PRODUCT__DATABASE_PG__HOST}
+      - SERVICE_PRODUCT__DATABASE_PG__USER=${SERVICE_PRODUCT__DATABASE_PG__USER}
+      - SERVICE_PRODUCT__DATABASE_PG__PASS=${SERVICE_PRODUCT__DATABASE_PG__PASS}
+      - SERVICE_PRODUCT__DATABASE_PG__PORT=${SERVICE_PRODUCT__DATABASE_PG__PORT}
+      - SERVICE_PRODUCT__DATABASE_PG__DB=${SERVICE_PRODUCT__DATABASE_PG__DB}
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_ADJUSTMENTTRANSACTION__API__LOCAL_HOST}
+  trans_db:
+    container_name: 'trans_db'
+    image: postgres:9.5
+    environment:
+      POSTGRES_USER: ${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER}
+      POSTGRES_PASSWORD: ${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PASS}
+      POSTGRES_DB: ${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__DB}
+      PGDATA: /data/postgres
+    volumes:
+       - ./ADJUSTMENTTRANSACTION_DB/DATA:/data/postgres
+       - ./ADJUSTMENTTRANSACTION_DB/DUMP:/docker-entrypoint-initdb.d/
+    ports:
+      - "${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT}:5432"
+    expose:
+      - "${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__USER}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      JUBELIO_network:
+        ipv4_address: ${SERVICE_ADJUSTMENTTRANSACTION__DATABASE_PG__HOST}
+
+networks:
+  JUBELIO_network:
+    name: JUBELIO_network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 99.99.98.0/24
