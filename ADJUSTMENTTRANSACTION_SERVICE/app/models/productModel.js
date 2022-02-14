@@ -35,16 +35,7 @@ class ProductModel{
           type: sequelize_node.QueryTypes.INSERT,
           raw: true
         }
-    ).then((result) => {
-      response = {
-        is_query_failed: false
-      };
-    }).catch(err => {
-      response = {
-        is_query_failed: true,
-        message: err
-      };
-    });
+    );
     return response;
   }
 
